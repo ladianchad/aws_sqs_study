@@ -1,9 +1,10 @@
 # AWS SimpleQueueService Study
 
-## require
+## requirements
 - boto3
 - aws ACCESSES_KEY_ID
 - aws ACCESSES_KEY
+- aws sqs url
 
 ## Install & Run
 ```bash
