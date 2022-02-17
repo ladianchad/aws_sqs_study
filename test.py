@@ -1,4 +1,8 @@
-import boto
+import sqs
 
 if __name__ == "__main__":
-    print("test for aws simple queue service")
+    manager =  sqs.SqsManger(
+        
+    )
+    print(manager)
+    print(manager.get())
