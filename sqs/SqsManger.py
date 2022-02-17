@@ -3,6 +3,7 @@ import boto3
 from botocore.config import Config
 import json
 import queue
+import time
 
 class SqsManger():
 
@@ -14,7 +15,7 @@ class SqsManger():
         def __str__(self) -> str:
             return f'receipt_handle : {self.receipt_handle}\ndata : {self.data}'
 
-    def __init__(self, region: str, access_key: str, secret_key: str, queue_url: str) -> None:
+    def __init__(self, region: str, access_key: str, secret_key: str, queue_url: str, batch_size = 1, group_id : str = 'default') -> None:
         config = Config(
             region_name = region
         )
@@ -22,6 +23,8 @@ class SqsManger():
         self.access_key = access_key
         self.secret_key = secret_key
         self.region = region
+        self.batch_size = batch_size
+        self.group_id = group_id
 
         self.client = boto3.client('sqs', 
             config = config,
@@ -35,13 +38,11 @@ class SqsManger():
     def __str__(self) -> str:
         return f'using boto3 sqs client\naccess_key_id is {len(self.access_key)} character start with {self.access_key[0]}\nsecret_key is {len(self.secret_key)} character start with {self.secret_key[0]}\nregion is {self.region}\nqueue name is {self.queue_url}'
 
-    def __len__(self):
-        return self.queue.qsize()
-
     def __receivce(self) -> None:
-        print(self.queue_url)
-        response = self.client.receive_message(QueueUrl = self.queue_url, MaxNumberOfMessages = 10)
-        print(response)
+        response = self.client.receive_message(
+            QueueUrl = self.queue_url,
+            MaxNumberOfMessages = self.batch_size
+            )
         if 'Messages' in response:
             for message in response['Messages']:
                 body = ''
@@ -49,7 +50,6 @@ class SqsManger():
                     body = json.loads(message['Body'])
                 except :
                     body = message['Body']
-
                 data = SqsManger.MessageDto(
                     receipt_handle = message['ReceiptHandle'],
                     data = body
@@ -67,3 +67,11 @@ class SqsManger():
             )
             return message.data
         return None
+    
+    def put(self, data) -> None:
+        self.client.send_message(
+            QueueUrl = self.queue_url,
+            MessageBody = json.dumps(data),
+            MessageGroupId = self.group_id,
+            MessageDeduplicationId = str(time.time())
+        )
